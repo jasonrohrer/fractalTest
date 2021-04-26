@@ -6,6 +6,24 @@
 
 CustomRandomSource randSource( 3454 );
 
+    
+int maxIter = 200;
+
+int emptyIterVal = 1024 * 1024;
+
+char renderIterMap = true;
+
+
+void clearIterPoints( double *iterXPoints, double *iterYPoints ) {
+    if( ! renderIterMap ) return;
+    
+    for( int i=0; i<maxIter; i++ ) {
+        iterXPoints[i] = emptyIterVal;
+        iterYPoints[i] = emptyIterVal;
+        }
+    }
+
+
 
 int main( int inNumArgs, char *inArgs[] ) {
     
@@ -17,14 +35,29 @@ int main( int inNumArgs, char *inArgs[] ) {
     
     
 
-    int w = 400;
-    int h = 400;
+    int w = 1000;
+    int h = 1000;
 
     Image im( w, h, 3 );
+
+
+    double maxTraceCount = 0;
+    
+    double **traceCount = new double*[h];
+    
+    for( int y=0; y<h; y++ ) {
+        traceCount[y] = new double[w];
+        
+        for( int x=0; x<w; x++ ) {
+            traceCount[y][x] = 0;
+            }
+        }
     
     Color inColor( 0, 0, 0 );
+
+    double *iterXPoints = new double[ maxIter ];
+    double *iterYPoints = new double[ maxIter ];
     
-    int maxIter = 200;
 
     // random colors for bands outside set
     Color *outColors = new Color[ maxIter ];
@@ -86,6 +119,7 @@ int main( int inNumArgs, char *inArgs[] ) {
             
 
             int i = 0;
+            clearIterPoints( iterXPoints, iterYPoints );
             
             while(  xA * xA + yA * yA < B * B &&
                    i < maxIter ) {
@@ -110,7 +144,11 @@ int main( int inNumArgs, char *inArgs[] ) {
                 yAOld = yA;
                 xA = xB;
                 yA = yB;
-                i++;
+
+                iterXPoints[i] = xB;
+                iterYPoints[i] = yB;                
+
+                i++;                
                 }
             
             if( i < maxIter ) {
@@ -129,9 +167,34 @@ int main( int inNumArgs, char *inArgs[] ) {
                 else {
                     im.setColor( y * w + x, outColors[i] );
                     }
+                
+                // add the trace points in
+                if( renderIterMap )
+                for( int t = 0; t<i; t++ ) {
+                    
+                    double xB = iterXPoints[t];
+                    double yB = iterYPoints[t];
+                    
+                    int xT = lrint( ( xB - offsetX ) * zoomFactor + w / 2 );
+                    int yT = lrint( ( yB + offsetY ) * zoomFactor + h / 2 );   
+                    
+                    if( xT >= 0 && xT < w &&
+                        yT >= 0 && yT < h ) {
+                        
+                        traceCount[yT][xT] ++;
+                        if( traceCount[yT][xT] > maxTraceCount ) {
+                            maxTraceCount = traceCount[yT][xT];
+                                }
+                        }
+                    }
                 }
             else {
+                // exploded
                 im.setColor( y * w + x, inColor );
+                
+                // ignore trace points (center areas are so bright that they
+                // overwhelm)
+                
                 }
             }
         }
@@ -148,5 +211,37 @@ int main( int inNumArgs, char *inArgs[] ) {
     
     conv.formatImage( &im, &out );
 
+
+    if( renderIterMap ) {
+        
+        Image traceIm( w, h, 3 );
+    
+        for( int y=0; y<h; y++ ) {
+            for( int x=0; x<w; x++ ) {
+                double v = log( traceCount[y][x] ) / log( maxTraceCount );
+                
+                Color c( v, v, v );
+                
+                traceIm.setColor( y * w + x, c );
+                }
+            }
+        
+        File traceF( NULL, "testTrace.tga" );
+        
+        FileOutputStream traceOut( &traceF );
+        
+        conv.formatImage( &traceIm, &traceOut );
+        }
+
+
     delete [] outColors;
+
+
+    for( int y=0; y<h; y++ ) {
+        delete [] traceCount[y];
+        }
+    delete [] traceCount;
+
+    delete [] iterXPoints;
+    delete [] iterYPoints;
     }
