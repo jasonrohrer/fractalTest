@@ -7,11 +7,11 @@
 CustomRandomSource randSource( 3454 );
 
     
-int maxIter = 200;
+int maxIter = 400;
 
 int emptyIterVal = 1024 * 1024;
 
-char renderIterMap = true;
+char renderIterMap = false;
 
 
 void clearIterPoints( double *iterXPoints, double *iterYPoints ) {
@@ -126,7 +126,22 @@ int main( int inNumArgs, char *inArgs[] ) {
                 
                 // Mandlebrot
                 double xB = xA * xA  - yA * yA + x0;
-                double yB = 2* xA * yA + y0;
+                double yB = 2 * xA * yA + y0;
+
+                
+                // tricorn
+                //double xB = xA * xA  - yA * yA + x0;
+                //double yB = - 2 * xA * yA + y0;
+
+                // burning ship
+                //double xB = xA * xA  - yA * yA + x0;
+                //double yB = fabs( 2 * xA * yA ) + y0;
+                
+
+                // what is this called?
+                // double xB = fabs( xA )  - fabs( yA ) + x0;
+                // double yB = 2 * xA * yA + y0;
+                
                 
                 
                 // use two sets of previous values
